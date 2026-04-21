@@ -586,10 +586,9 @@
         <table class="stages" id="stagesTable">
           <thead>
             <tr>
-              <th style="width: 30%">Stage</th>
-              <th class="num" style="width: 12%">Drop %</th>
-              <th style="width: 26%">Per-Kill Chance</th>
-              <th style="width: 18%">Enemies</th>
+              <th style="width: 34%">Stage</th>
+              <th style="width: 32%">Per-Kill Drop Chance</th>
+              <th style="width: 20%">Enemies</th>
               <th class="num" style="width: 14%">Expected</th>
             </tr>
           </thead>
@@ -776,7 +775,6 @@
             </div>
           </div>
         </td>
-        <td class="num">${(s.p*100).toFixed(2)}%</td>
         <td>
           <div class="chance-bar">
             <div class="track"><div class="fill" style="width:${(s.p/MAX_P*100).toFixed(1)}%"></div></div>
@@ -838,8 +836,8 @@
     const idx = STAGES.findIndex(x => x.id === id);
     const tr = rows[idx]; if (!tr) return;
     const tds = tr.querySelectorAll('td');
-    // tds: 0 stage, 1 drop%, 2 bar, 3 enemies, 4 expected
-    tds[4].textContent = exp.toFixed(1);
+    // tds: 0 stage, 1 bar, 2 enemies, 3 expected
+    tds[3].textContent = exp.toFixed(1);
   }
 
   function renderSummary(){
