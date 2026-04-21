@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SHD // Prototype Drop Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @font-face{
+    font-family: 'Borda';
+    src: url('fonts/borda.ttf') format('truetype');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root{
+    --bg:#0a0d0f;
+    --bg-2:#0f1317;
+    --panel:#11171c;
+    --panel-2:#161d23;
+    --line:#1f2a31;
+    --line-2:#2a3740;
+    --ink:#cfd8dc;
+    --ink-dim:#7c8a93;
+    --ink-mute:#4d5a62;
+    --orange:#ff7a1a;
+    --orange-2:#ffa054;
+    --orange-dim:#6b3812;
+    --green:#7fd1a8;
+    --red:#e05a3f;
+    --yellow:#f0c24a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Borda','Rajdhani',sans-serif;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,122,26,.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(255,122,26,.05), transparent 60%),
+      linear-gradient(180deg, #0a0d0f 0%, #070909 100%);
+    background-attachment: fixed;
+  }
+  /* subtle scanline / grid */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events:none;
+    mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+    z-index:0;
+  }
+  .wrap{
+    position:relative; z-index:1;
+    max-width:1360px;
+    margin: 0 auto;
+    padding: 28px 28px 80px;
+  }
+
+  /* header */
+  .top{
+    display:flex; align-items:center; gap:18px;
+    padding: 10px 14px;
+    border:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,122,26,.05), rgba(255,122,26,0)) , var(--panel);
+    position:relative;
+  }
+  .top::before, .top::after{
+    content:""; position:absolute; width:10px; height:10px; border:1px solid var(--orange);
+  }
+  .top::before{ left:-1px; top:-1px; border-right:none; border-bottom:none; }
+  .top::after{ right:-1px; bottom:-1px; border-left:none; border-top:none; }
+
+  .shd-mark{
+    width:44px; height:44px; flex:0 0 44px;
+    display:grid; place-items:center;
+    color:var(--orange);
+  }
+  .shd-mark svg{width:100%; height:100%}
+  .title-block{flex:1; min-width:0}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.24em;
+    color:var(--orange); text-transform:uppercase;
+  }
+  h1{
+    margin:2px 0 0;
+    font-family:'Borda','Barlow Condensed',sans-serif;
+    font-weight:600;
+    letter-spacing:.06em;
+    font-size:28px;
+    text-transform:uppercase;
+    color:#eef3f5;
+  }
+  h1 .slash{color:var(--orange); margin:0 .35em; font-weight:400}
+  .top-meta{
+    display:flex; gap:22px; align-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-dim);
+    letter-spacing:.1em;
+  }
+  .pulse{
+    display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--orange); margin-right:8px;
+    box-shadow: 0 0 0 0 rgba(255,122,26,.6);
+    animation: pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,122,26,.6)}
+    70%{box-shadow:0 0 0 10px rgba(255,122,26,0)}
+    100%{box-shadow:0 0 0 0 rgba(255,122,26,0)}
+  }
+
+  /* layout */
+  .grid{
+    display:grid;
+    grid-template-columns: 380px 1fr;
+    gap:18px;
+    margin-top:18px;
+  }
+  @media (max-width: 1080px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  /* panels */
+  .panel{
+    position:relative;
+    background: var(--panel);
+    border:1px solid var(--line);
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 14px;
+    border-bottom:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+  }
+  .panel-head .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em;
+    color:var(--ink-dim); text-transform:uppercase;
+  }
+  .panel-head .label .dot{color:var(--orange)}
+  .panel-head .id{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em;
+    color:var(--ink-mute);
+  }
+  .panel-body{padding:18px 16px}
+
+  .corner{position:absolute; width:12px; height:12px; border:1px solid var(--orange); opacity:.85}
+  .corner.tl{top:-1px; left:-1px; border-right:none; border-bottom:none}
+  .corner.tr{top:-1px; right:-1px; border-left:none; border-bottom:none}
+  .corner.bl{bottom:-1px; left:-1px; border-right:none; border-top:none}
+  .corner.br{bottom:-1px; right:-1px; border-left:none; border-top:none}
+
+  /* input card */
+  .input-block{ margin-bottom: 18px; }
+  .input-block:last-child{margin-bottom:0}
+  .input-label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.2em;
+    color:var(--ink-dim); text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .input-label .hint{color:var(--ink-mute); letter-spacing:.14em}
+
+  .num-field{
+    display:flex; align-items:stretch;
+    border:1px solid var(--line-2);
+    background: #0b1014;
+  }
+  .num-field button{
+    width:44px; background:transparent; border:none; color:var(--ink-dim);
+    font-family:'Borda','Barlow Condensed',sans-serif; font-size:22px; cursor:pointer;
+    transition: color .15s, background .15s;
+  }
+  .num-field button:hover{ color:var(--orange); background: rgba(255,122,26,.08)}
+  .num-field input{
+    flex:1; text-align:center;
+    background:transparent; border:none; outline:none;
+    color:#fff;
+    font-family:'Borda','Barlow Condensed',sans-serif; font-weight:600;
+    font-size:30px; letter-spacing:.04em;
+    padding: 8px 0;
+  }
+  .num-field .suffix{
+    align-self:center; padding-right:14px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:var(--ink-mute); letter-spacing:.18em; text-transform:uppercase;
+  }
+
+  .preset-row{
+    display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;
+  }
+  .chip{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.16em;
+    padding:6px 10px;
+    border:1px solid var(--line-2);
+    background:transparent;
+    color:var(--ink-dim);
+    cursor:pointer;
+    text-transform:uppercase;
+    transition: all .15s;
+  }
+  .chip:hover{border-color:var(--orange); color:var(--orange)}
+  .chip.active{border-color:var(--orange); color:var(--orange); background:rgba(255,122,26,.08)}
+
+  .target-row{
+    display:flex; gap:10px; align-items:stretch;
+  }
+  .target-row .num-field{flex:1}
+
+  /* overview table */
+  .stages{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    font-family:'Borda','Rajdhani',sans-serif;
+  }
+  .stages thead th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500;
+    letter-spacing:.2em; color:var(--ink-mute);
+    text-transform:uppercase;
+    padding: 10px 12px;
+    border-bottom:1px solid var(--line);
+    background: rgba(255,255,255,.01);
+  }
+  .stages thead th.num{ text-align:right }
+  .stages tbody td{
+    padding: 12px;
+    border-bottom:1px solid rgba(31,42,49,.55);
+    vertical-align:middle;
+    font-size:15px;
+  }
+  .stages tbody tr:hover td{ background: rgba(255,122,26,.035) }
+  .stages tbody tr.highlight td{
+    background: linear-gradient(90deg, rgba(255,122,26,.10), rgba(255,122,26,0) 70%);
+  }
+  .stages td.num{ text-align:right; font-variant-numeric: tabular-nums; font-family:'JetBrains Mono',monospace; font-size:13px;}
+
+  .stage-cell{
+    display:flex; align-items:center; gap:12px;
+  }
+  .stage-badge{
+    width:34px; height:34px; flex:0 0 34px;
+    display:grid; place-items:center;
+    background: #0a1015;
+    border:1px solid var(--line-2);
+    color:var(--ink);
+    font-family:'Borda','Barlow Condensed',sans-serif;
+    font-weight:700; font-size:18px;
+    letter-spacing:.04em;
+    position:relative;
+  }
+  .stage-badge.tier-hi{ border-color: var(--orange); color:var(--orange)}
+  .stage-badge.tier-mid{ border-color:#b86a25; color:#e08a3f}
+  .stage-meta{ line-height:1.1 }
+  .stage-meta .st-name{
+    font-family:'Borda','Barlow Condensed',sans-serif; font-weight:600;
+    font-size:15px; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .stage-meta .st-sub{
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-mute);
+    letter-spacing:.15em; margin-top:2px;
+  }
+
+  .chance-bar{
+    position:relative;
+    display:flex; align-items:center; gap:10px;
+  }
+  .chance-bar .val{
+    min-width:52px; text-align:right; color:#e6ecef;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+  .chance-bar .track{
+    flex:1; height:4px; background:#0b1014; border:1px solid var(--line);
+    position:relative; overflow:hidden;
+  }
+  .chance-bar .fill{
+    position:absolute; left:0; top:0; bottom:0;
+    background: linear-gradient(90deg, #c45412, var(--orange));
+    box-shadow: 0 0 12px rgba(255,122,26,.35);
+  }
+
+  .expected{
+    color:#eaf1f4; font-weight:600;
+  }
+  .p-one{
+    color: var(--green);
+  }
+
+  .mini-dist{
+    display:flex; gap:3px; align-items:flex-end; height:22px;
+    justify-content:flex-end;
+  }
+  .mini-dist .b{
+    width:8px; background: #243038; border:1px solid #2f3c46;
+    position:relative;
+  }
+  .mini-dist .b.hot{ background: linear-gradient(180deg, var(--orange), #8a3a0e); border-color:#8a3a0e }
+  .mini-dist .b::after{
+    content: attr(data-label);
+    position:absolute; top:calc(100% + 4px); left:50%; transform:translateX(-50%);
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-mute);
+  }
+
+  /* summary cards */
+  .summary{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:12px;
+    margin-top:18px;
+  }
+  @media (max-width: 900px){ .summary{grid-template-columns: repeat(2,1fr)} }
+  .stat{
+    position:relative;
+    padding:14px 14px 16px;
+    background: var(--panel);
+    border:1px solid var(--line);
+  }
+  .stat .stat-label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em;
+    color:var(--ink-mute); text-transform:uppercase;
+  }
+  .stat .stat-val{
+    margin-top:8px;
+    font-family:'Borda','Barlow Condensed',sans-serif;
+    font-weight:600; font-size:32px; letter-spacing:.04em;
+    color:#fff;
+    line-height:1;
+  }
+  .stat .stat-val .unit{
+    font-size:14px; color:var(--ink-dim); margin-left:6px; letter-spacing:.1em;
+  }
+  .stat .stat-sub{
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:var(--ink-dim); letter-spacing:.1em;
+  }
+  .stat.accent{
+    background: linear-gradient(180deg, rgba(255,122,26,.09), rgba(255,122,26,.02));
+    border-color: #5a2c0f;
+  }
+  .stat.accent .stat-val{ color: var(--orange) }
+
+  /* runs-to-target readout */
+  .runs-readout{
+    margin-top:14px;
+    padding:12px 14px;
+    border:1px dashed var(--line-2);
+    background: #0b1014;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--ink-dim); letter-spacing:.08em;
+    line-height:1.6;
+  }
+  .runs-readout b{
+    color: var(--orange); font-weight:700;
+    font-family:'Borda','Barlow Condensed',sans-serif;
+    font-size:20px; letter-spacing:.04em;
+    margin: 0 3px;
+  }
+  .runs-readout .muted{color:var(--ink-mute)}
+
+  .foot{
+    margin-top:20px; display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-mute);
+    letter-spacing:.2em;
+  }
+  .foot .dots{color:var(--orange)}
+
+  /* helpers */
+  .row-edit{
+    display:flex; align-items:stretch;
+    border:1px solid var(--line-2);
+    background:#0b1014;
+    height:32px;
+  }
+  .row-edit .edit-btn{
+    width:26px; background:transparent; border:none; color:var(--ink-dim);
+    font-family:'Borda','Barlow Condensed',sans-serif; font-size:16px; cursor:pointer;
+  }
+  .row-edit .edit-btn:hover{ color:var(--orange); background:rgba(255,122,26,.08); }
+  .row-edit .row-input{
+    flex:1; width:100%; min-width:0;
+    background:transparent; border:none; outline:none;
+    text-align:center;
+    color:#fff;
+    font-family:'Borda','JetBrains Mono',monospace; font-weight:600;
+    font-size:14px; letter-spacing:.04em;
+    -moz-appearance:textfield;
+  }
+  .row-edit .row-input::-webkit-outer-spin-button,
+  .row-edit .row-input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+
+  .hint-line{
+    margin-top:8px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:var(--ink-mute); letter-spacing:.1em;
+  }
+
+  .sep{
+    height:1px; background:var(--line); margin:16px 0;
+  }
+
+
+  .tabs{
+    display:flex; gap:0; border:1px solid var(--line-2);
+    margin-bottom:14px;
+  }
+  .tab{
+    flex:1; text-align:center; padding:10px 8px; cursor:pointer;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em;
+    color:var(--ink-dim); text-transform:uppercase;
+    border-right:1px solid var(--line-2); background:transparent;
+  }
+  .tab:last-child{border-right:none}
+  .tab.active{
+    color:var(--orange); background:rgba(255,122,26,.06);
+    box-shadow: inset 0 -2px 0 var(--orange);
+  }
+
+  /* distribution big chart */
+  .dist-chart{
+    display:grid; grid-template-columns: repeat(4,1fr);
+    gap:12px; margin-top:8px;
+  }
+  .dist-col{
+    padding:12px 10px 10px;
+    border:1px solid var(--line);
+    background:#0b1014;
+    position:relative;
+    min-height:150px;
+    display:flex; flex-direction:column; justify-content:flex-end;
+  }
+  .dist-col .bar-wrap{
+    height:80px; display:flex; align-items:flex-end; justify-content:center;
+    margin-bottom:10px;
+  }
+  .dist-col .bar{
+    width: 38px;
+    background: linear-gradient(180deg, var(--orange), #7a3410);
+    border:1px solid #8a3a0e;
+    min-height:2px;
+    position:relative;
+    box-shadow: 0 0 18px rgba(255,122,26,.25);
+  }
+  .dist-col .bar.cold{
+    background: linear-gradient(180deg, #2f3c46, #1a242b);
+    border-color:#2a3740;
+    box-shadow:none;
+  }
+  .dist-col .pct{
+    text-align:center;
+    font-family:'Borda','Barlow Condensed',sans-serif; font-weight:600;
+    font-size:22px; letter-spacing:.04em;
+    color:#fff;
+  }
+  .dist-col .lbl{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.16em;
+    color:var(--ink-mute); text-transform:uppercase; margin-top:4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="top">
+    <div class="shd-mark" aria-hidden="true">
+      <!-- SHD-style emblem -->
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" />
+        <polygon points="32,14 50,24 50,40 32,50 14,40 14,24" opacity=".55"/>
+        <path d="M32 22 V42 M24 28 L40 36 M40 28 L24 36" stroke-width="1.5" opacity=".9"/>
+      </svg>
+    </div>
+    <div class="title-block">
+      <div class="eyebrow"><span class="pulse"></span>SHD // Network — Loot Analytics</div>
+      <h1>Prototype Gear <span class="slash">//</span> Drop Chance Calculator</h1>
+    </div>
+    <div class="top-meta">
+      <div>VER 2.47</div>
+      <div>PATCH TU21.2</div>
+      <div id="clockout">— : — : —</div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="grid">
+
+    <!-- LEFT : INPUT -->
+    <section class="panel">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <div class="panel-head">
+        <div class="label"><span class="dot">■</span> INPUT &nbsp;/&nbsp; Parameters</div>
+        <div class="id">MOD.A01</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="input-block">
+          <div class="input-label">
+            <span>Apply to All Stages</span>
+            <span class="hint">bulk edit</span>
+          </div>
+          <div class="num-field">
+            <button type="button" id="enemyMinus" aria-label="decrease">−</button>
+            <input id="enemies" type="number" min="1" max="9999" value="200" />
+            <span class="suffix">hostiles</span>
+            <button type="button" id="enemyPlus" aria-label="increase">+</button>
+          </div>
+          <div class="preset-row" id="enemyPresets">
+            <button class="chip" data-val="50">50</button>
+            <button class="chip" data-val="100">100</button>
+            <button class="chip active" data-val="200">200</button>
+            <button class="chip" data-val="300">300</button>
+            <button class="chip" data-val="500">500</button>
+          </div>
+          <div class="hint-line">Overwrites per-stage values · edit each row individually in the matrix →</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="input-block">
+          <div class="input-label">
+            <span>Runs per Session</span>
+            <span class="hint">optional</span>
+          </div>
+          <div class="num-field">
+            <button type="button" id="runsMinus">−</button>
+            <input id="runs" type="number" min="1" max="9999" value="1" />
+            <span class="suffix">runs</span>
+            <button type="button" id="runsPlus">+</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="input-block">
+          <div class="input-label">
+            <span>Target Drops</span>
+            <span class="hint">build goal</span>
+          </div>
+          <div class="num-field">
+            <button type="button" id="targetMinus">−</button>
+            <input id="target" type="number" min="1" max="99" value="6" />
+            <span class="suffix">pieces</span>
+            <button type="button" id="targetPlus">+</button>
+          </div>
+          <div class="preset-row">
+            <button class="chip" data-target="1">1 · First</button>
+            <button class="chip" data-target="3">3 · Half-Set</button>
+            <button class="chip active" data-target="6">6 · Full Build</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="input-block" style="margin-bottom:0">
+          <div class="input-label">
+            <span>Highlight Stage</span>
+            <span class="hint">focus</span>
+          </div>
+          <div class="tabs" id="stageTabs">
+            <!-- rendered by JS -->
+          </div>
+          <div class="runs-readout" id="focusReadout">
+            Select a stage to lock focus.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT : OUTPUT -->
+    <section class="panel">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <div class="panel-head">
+        <div class="label"><span class="dot">■</span> OUTPUT &nbsp;/&nbsp; Escalation Matrix</div>
+        <div class="id" id="matrixMeta">10 STAGES · LIVE</div>
+      </div>
+      <div class="panel-body">
+
+        <table class="stages" id="stagesTable">
+          <thead>
+            <tr>
+              <th style="width: 30%">Stage</th>
+              <th class="num" style="width: 12%">Drop %</th>
+              <th style="width: 26%">Per-Kill Chance</th>
+              <th style="width: 18%">Enemies</th>
+              <th class="num" style="width: 14%">Expected</th>
+            </tr>
+          </thead>
+          <tbody id="stagesBody"></tbody>
+        </table>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- SUMMARY -->
+  <section class="summary" id="summary">
+    <div class="stat accent">
+      <div class="stat-label">Focus Stage</div>
+      <div class="stat-val" id="sumStage">—</div>
+      <div class="stat-sub" id="sumStagePct">— % per kill</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Expected Drops · per Run</div>
+      <div class="stat-val" id="sumExpected">—<span class="unit">gears</span></div>
+      <div class="stat-sub" id="sumExpectedSession">— across session</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Chance of ≥ 1 · per Run</div>
+      <div class="stat-val" id="sumPone">— <span class="unit">%</span></div>
+      <div class="stat-sub" id="sumPoneSession">session: — %</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Runs until Target</div>
+      <div class="stat-val" id="sumRuns">— <span class="unit">runs</span></div>
+      <div class="stat-sub" id="sumRunsSub">50% · 90% confidence</div>
+    </div>
+  </section>
+
+  <!-- BIG DIST REMOVED -->
+
+  <footer class="foot">
+    <div>SHD NETWORK <span class="dots">// //</span> DIV2 PROTOTYPE LOOT MODULE · <span style="color:var(--orange)">CREATED BY GOMAAZ</span></div>
+    <div id="footTime">— UTC</div>
+  </footer>
+</div>
+
+<script>
+  // ---- Data ----
+  const STAGES = [
+    { id: 1,  name: 'Escalation I',    p: 0.0020 },
+    { id: 2,  name: 'Escalation II',   p: 0.0040 },
+    { id: 3,  name: 'Escalation III',  p: 0.0060 },
+    { id: 4,  name: 'Escalation IV',   p: 0.0060 },
+    { id: 5,  name: 'Escalation V',    p: 0.0080 },
+    { id: 6,  name: 'Escalation VI',   p: 0.0125 },
+    { id: 7,  name: 'Escalation VII',  p: 0.0150 },
+    { id: 8,  name: 'Escalation VIII', p: 0.0200 },
+    { id: 9,  name: 'Escalation IX',   p: 0.0250 },
+    { id: 10, name: 'Escalation X',    p: 0.0300 },
+  ];
+  const MAX_P = Math.max(...STAGES.map(s => s.p));
+
+  // ---- State ----
+  const state = {
+    enemies: 200,
+    perStage: STAGES.reduce((a,s)=> (a[s.id]=200, a), {}),
+    runs: 1,
+    target: 6,
+    focus: 10,
+  };
+
+  // ---- Math helpers ----
+  function binomPMF(n, p, k){
+    // guarded for small/large n with logs
+    if (k < 0 || k > n) return 0;
+    // use log gamma via factorial approx for small n we have; fall back to iterative
+    let logC = 0;
+    const kk = Math.min(k, n - k);
+    for (let i = 1; i <= kk; i++){
+      logC += Math.log(n - kk + i) - Math.log(i);
+    }
+    const logPmf = logC + k * Math.log(p) + (n - k) * Math.log(1 - p);
+    return Math.exp(logPmf);
+  }
+  function pAtLeastOne(n, p){
+    if (p <= 0 || n <= 0) return 0;
+    return 1 - Math.pow(1 - p, n);
+  }
+  function expectedPerRun(n, p){ return n * p; }
+
+  // How many runs needed for >= target drops with confidence c ?
+  // P(X >= target) >= c, X ~ Binomial(runs * n, p). We search incrementally.
+  function runsForConfidence(n, p, target, c){
+    if (p <= 0) return Infinity;
+    // use normal approximation for speed when large, exact otherwise
+    let runs = 1;
+    const cap = 100000;
+    while (runs < cap){
+      const N = runs * n;
+      const mean = N * p;
+      const varc = N * p * (1 - p);
+      // exact when small, approx when big
+      let pGE;
+      if (N * p < 200 && N < 20000){
+        // compute P(X < target) exactly
+        let cdf = 0;
+        for (let k = 0; k < target; k++){
+          cdf += binomPMF(N, p, k);
+        }
+        pGE = 1 - cdf;
+      } else {
+        // normal approx w/ continuity correction
+        const z = (target - 0.5 - mean) / Math.sqrt(varc);
+        pGE = 1 - normCdf(z);
+      }
+      if (pGE >= c) return runs;
+      runs++;
+      // crude scaling: once expected drops far exceeds target, skip ahead
+      if (runs > 50 && mean > target * 3 && pGE < c) {
+        // shouldn't happen but safety
+      }
+    }
+    return cap;
+  }
+  function normCdf(z){
+    // Abramowitz-Stegun approx
+    const b1 =  0.319381530;
+    const b2 = -0.356563782;
+    const b3 =  1.781477937;
+    const b4 = -1.821255978;
+    const b5 =  1.330274429;
+    const p  =  0.2316419;
+    const c  =  0.39894228;
+    const az = Math.abs(z);
+    const t = 1.0 / (1.0 + p * az);
+    const phi = c * Math.exp(-az*az/2) * t * (b1 + t*(b2 + t*(b3 + t*(b4 + t*b5))));
+    return z >= 0 ? 1 - phi : phi;
+  }
+
+  // ---- Render ----
+  const el = (id) => document.getElementById(id);
+
+  function tierClass(p){
+    if (p >= 0.02) return 'tier-hi';
+    if (p >= 0.01) return 'tier-mid';
+    return '';
+  }
+
+  function renderStageTabs(){
+    const host = el('stageTabs');
+    host.innerHTML = '';
+    STAGES.forEach(s => {
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'tab' + (s.id === state.focus ? ' active' : '');
+      t.textContent = 'ST ' + String(s.id).padStart(2,'0');
+      t.addEventListener('click', () => { state.focus = s.id; renderAll(); });
+      host.appendChild(t);
+    });
+  }
+
+  function renderStagesTable(){
+    const body = el('stagesBody');
+    body.innerHTML = '';
+
+    STAGES.forEach(s => {
+      const n = Math.max(1, state.perStage[s.id]|0);
+      const exp = expectedPerRun(n, s.p);
+      const p1 = pAtLeastOne(n, s.p);
+
+      const p0 = Math.pow(1-s.p, n);
+      const pk1 = binomPMF(n, s.p, 1);
+      const pk2 = binomPMF(n, s.p, 2);
+      const p3p = Math.max(0, 1 - p0 - pk1 - pk2);
+      const dist = [p0, pk1, pk2, p3p];
+      const maxD = Math.max(...dist);
+
+      const tr = document.createElement('tr');
+      if (s.id === state.focus) tr.classList.add('highlight');
+
+      tr.innerHTML = `
+        <td>
+          <div class="stage-cell">
+            <div class="stage-badge ${tierClass(s.p)}">${String(s.id).padStart(2,'0')}</div>
+            <div class="stage-meta">
+              <div class="st-name">${s.name}</div>
+              <div class="st-sub">TIER ${s.id <= 3 ? 'I' : s.id <= 6 ? 'II' : s.id <= 8 ? 'III' : 'IV'} · ${s.id===10?'APEX':'STD'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="num">${(s.p*100).toFixed(2)}%</td>
+        <td>
+          <div class="chance-bar">
+            <div class="track"><div class="fill" style="width:${(s.p/MAX_P*100).toFixed(1)}%"></div></div>
+            <div class="val">${(s.p*100).toFixed(2)}%</div>
+          </div>
+        </td>
+        <td>
+          <div class="row-edit">
+            <button class="edit-btn" data-act="dec" data-id="${s.id}" aria-label="decrease">−</button>
+            <input class="row-input" data-id="${s.id}" type="number" min="1" max="9999" value="${n}" />
+            <button class="edit-btn" data-act="inc" data-id="${s.id}" aria-label="increase">+</button>
+          </div>
+        </td>
+        <td class="num expected">${exp.toFixed(1)}</td>
+      `;
+      // focus on click of row (anywhere except inputs/buttons)
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('input') || e.target.closest('button')) return;
+        state.focus = s.id; renderAll();
+      });
+      body.appendChild(tr);
+    });
+
+    // bind row inputs
+    body.querySelectorAll('.row-input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const id = Number(inp.dataset.id);
+        const v = Math.max(1, Math.min(9999, Number(inp.value)|0 || 1));
+        state.perStage[id] = v;
+        updateRowMetrics(id);
+        renderSummary();
+      });
+      inp.addEventListener('blur', () => {
+        inp.value = state.perStage[Number(inp.dataset.id)];
+      });
+    });
+    body.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = Number(btn.dataset.id);
+        const step = 10;
+        const cur = state.perStage[id];
+        const next = btn.dataset.act === 'inc'
+          ? Math.min(9999, cur + step)
+          : Math.max(1, cur - step);
+        state.perStage[id] = next;
+        renderAll();
+      });
+    });
+  }
+
+  // lightweight in-place metric refresh for the edited row
+  function updateRowMetrics(id){
+    const s = STAGES.find(x => x.id === id);
+    const n = Math.max(1, state.perStage[id]|0);
+    const exp = expectedPerRun(n, s.p);
+    const p1 = pAtLeastOne(n, s.p);
+    const rows = document.querySelectorAll('#stagesBody tr');
+    const idx = STAGES.findIndex(x => x.id === id);
+    const tr = rows[idx]; if (!tr) return;
+    const tds = tr.querySelectorAll('td');
+    // tds: 0 stage, 1 drop%, 2 bar, 3 enemies, 4 expected
+    tds[4].textContent = exp.toFixed(1);
+  }
+
+  function renderSummary(){
+    const runs = Math.max(1, state.runs|0);
+    const target = Math.max(1, state.target|0);
+
+    const s = STAGES.find(x => x.id === state.focus);
+    const n = Math.max(1, state.perStage[s.id]|0);
+    const exp = expectedPerRun(n, s.p);
+    const p1 = pAtLeastOne(n, s.p);
+    const r50 = runsForConfidence(n, s.p, target, 0.50);
+    const r90 = runsForConfidence(n, s.p, target, 0.90);
+
+    const sessionExp = exp * runs;
+    const sessionP1 = 1 - Math.pow(1 - p1, runs);
+
+    el('sumStage').textContent = 'STAGE ' + String(s.id).padStart(2,'0');
+    el('sumStagePct').textContent = (s.p*100).toFixed(2) + ' % per kill · ' + n + ' kills/run';
+
+    el('sumExpected').innerHTML = exp.toFixed(1) + '<span class="unit">gears</span>';
+    el('sumExpectedSession').textContent = 'session (' + runs + ' runs): ' + sessionExp.toFixed(1) + ' gears';
+
+    el('sumPone').innerHTML = (p1*100).toFixed(1) + ' <span class="unit">%</span>';
+    el('sumPoneSession').textContent = 'session: ' + (sessionP1*100).toFixed(1) + ' %';
+
+    el('sumRuns').innerHTML = (isFinite(r50) ? r50 : '∞') + ' <span class="unit">/ ' + (isFinite(r90) ? r90 : '∞') + '</span>';
+    el('sumRunsSub').textContent = '50 % · 90 % confidence for ' + target + ' drops';
+
+    const r = el('focusReadout');
+    r.innerHTML = `
+      <span class="muted">// focus</span> STAGE ${String(s.id).padStart(2,'0')} · ${s.name} (${n} kills)<br>
+      <span class="muted">// per run</span> <b>${exp.toFixed(1)}</b>expected, <b>${(p1*100).toFixed(1)}%</b>chance of any<br>
+      <span class="muted">// target ${target} drops</span> <b>${isFinite(r50)?r50:'∞'}</b>runs (50%), <b>${isFinite(r90)?r90:'∞'}</b>runs (90%)
+    `;
+  }
+
+
+
+  function renderAll(){
+    [...document.querySelectorAll('#stageTabs .tab')].forEach((t, i) => {
+      t.classList.toggle('active', STAGES[i].id === state.focus);
+    });
+    [...document.querySelectorAll('#enemyPresets .chip')].forEach(c => {
+      c.classList.toggle('active', Number(c.dataset.val) === state.enemies);
+    });
+    renderStagesTable();
+    renderSummary();
+  }
+
+  // ---- Controls ----
+  function bindNumField(inputId, minusId, plusId, key, min, max, step){
+    const input = el(inputId);
+    const dec = el(minusId);
+    const inc = el(plusId);
+    const clamp = v => Math.max(min, Math.min(max, v|0 || min));
+    input.value = state[key];
+    input.addEventListener('input', () => {
+      state[key] = clamp(Number(input.value) || min);
+      renderAll();
+    });
+    input.addEventListener('blur', () => {
+      input.value = state[key];
+    });
+    dec.addEventListener('click', () => { state[key] = clamp(state[key] - step); input.value = state[key]; renderAll(); });
+    inc.addEventListener('click', () => { state[key] = clamp(state[key] + step); input.value = state[key]; renderAll(); });
+  }
+
+  // bulk enemies field: applies to every stage when changed
+  function applyBulk(v){
+    state.enemies = v;
+    STAGES.forEach(s => { state.perStage[s.id] = v; });
+    renderAll();
+  }
+  (function bindBulk(){
+    const input = el('enemies');
+    input.value = state.enemies;
+    input.addEventListener('input', () => {
+      const v = Math.max(1, Math.min(9999, Number(input.value)|0 || 1));
+      applyBulk(v);
+    });
+    input.addEventListener('blur', () => { input.value = state.enemies; });
+    el('enemyMinus').addEventListener('click', () => { applyBulk(Math.max(1, state.enemies - 10)); el('enemies').value = state.enemies; });
+    el('enemyPlus').addEventListener('click', () => { applyBulk(Math.min(9999, state.enemies + 10)); el('enemies').value = state.enemies; });
+  })();
+
+  bindNumField('runs',    'runsMinus',  'runsPlus',  'runs',    1, 9999, 1);
+  bindNumField('target',  'targetMinus','targetPlus','target',  1, 99,  1);
+
+  document.querySelectorAll('#enemyPresets .chip').forEach(c => {
+    c.addEventListener('click', () => {
+      const v = Number(c.dataset.val);
+      applyBulk(v);
+      el('enemies').value = v;
+    });
+  });
+
+  document.querySelectorAll('.chip[data-target]').forEach(c => {
+    c.addEventListener('click', () => {
+      state.target = Number(c.dataset.target);
+      el('target').value = state.target;
+      document.querySelectorAll('.chip[data-target]').forEach(x => x.classList.toggle('active', x === c));
+      renderAll();
+    });
+  });
+
+  // init
+  renderStageTabs();
+  renderAll();
+
+  // clock
+  function tick(){
+    const d = new Date();
+    const pad = x => String(x).padStart(2,'0');
+    const t = pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds());
+    el('clockout').textContent = t + ' UTC';
+    el('footTime').textContent = t + ' UTC · SESSION LIVE';
+  }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
