@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>SHD // Prototype Drop Calculator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<script type="text/javascript" nonce="19d2a19f4fab4c469293e1d902c" src="//local.adguard.org?ts=1776770474623&amp;type=content-script&amp;dmn=claude.ai&amp;url=https%3A%2F%2Fclaude.ai%2Fdesign%2Fv1%2Fdesign%2Fprojects%2F82650ca6-af22-4f10-bd98-fc3ebe4ef43e%2Fdownload%3Fpath%3Dindex.html&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="19d2a19f4fab4c469293e1d902c" src="//local.adguard.org?ts=1776770474623&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -636,16 +636,16 @@
 <script>
   // ---- Data ----
   const STAGES = [
-    { id: 1,  name: 'Escalation I',    p: 0.0020 },
-    { id: 2,  name: 'Escalation II',   p: 0.0040 },
-    { id: 3,  name: 'Escalation III',  p: 0.0060 },
-    { id: 4,  name: 'Escalation IV',   p: 0.0060 },
-    { id: 5,  name: 'Escalation V',    p: 0.0080 },
-    { id: 6,  name: 'Escalation VI',   p: 0.0125 },
-    { id: 7,  name: 'Escalation VII',  p: 0.0150 },
-    { id: 8,  name: 'Escalation VIII', p: 0.0200 },
-    { id: 9,  name: 'Escalation IX',   p: 0.0250 },
-    { id: 10, name: 'Escalation X',    p: 0.0300 },
+    { id: 1,  name: 'Escalation',    p: 0.0020 },
+    { id: 2,  name: 'Escalation',   p: 0.0040 },
+    { id: 3,  name: 'Escalation',  p: 0.0060 },
+    { id: 4,  name: 'Escalation',   p: 0.0060 },
+    { id: 5,  name: 'Escalation',    p: 0.0080 },
+    { id: 6,  name: 'Escalation',   p: 0.0125 },
+    { id: 7,  name: 'Escalation',  p: 0.0150 },
+    { id: 8,  name: 'Escalation', p: 0.0200 },
+    { id: 9,  name: 'Escalation',   p: 0.0250 },
+    { id: 10, name: 'Escalation',    p: 0.0300 },
   ];
   const MAX_P = Math.max(...STAGES.map(s => s.p));
 
@@ -773,7 +773,6 @@
             <div class="stage-badge ${tierClass(s.p)}">${String(s.id).padStart(2,'0')}</div>
             <div class="stage-meta">
               <div class="st-name">${s.name}</div>
-              <div class="st-sub">TIER ${s.id <= 3 ? 'I' : s.id <= 6 ? 'II' : s.id <= 8 ? 'III' : 'IV'} · ${s.id===10?'APEX':'STD'}</div>
             </div>
           </div>
         </td>
